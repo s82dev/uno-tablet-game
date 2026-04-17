@@ -2,39 +2,98 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNO Tablet</title>
+<title>UNO P2P</title>
 
 <style>
-body {
-  font-family: sans-serif;
-  text-align: center;
-  background: #1e1e2f;
-  color: white;
+body{font-family:sans-serif;text-align:center;background:#111;color:white;}
+.card{display:inline-block;width:80px;height:120px;margin:5px;border-radius:10px;font-size:20px;}
+.red{background:red;} .green{background:green;}
+.blue{background:blue;} .yellow{background:gold;color:black;}
+#hand{position:fixed;bottom:0;width:100%;overflow-x:auto;white-space:nowrap;}
+button{font-size:18px;padding:10px;margin:5px;}
+</style>
+</head>
+
+<body>
+
+<h1>UNO FREE 🔥</h1>
+
+<button onclick="create()">HOST</button>
+<button onclick="join()">JOIN</button>
+
+<textarea id="signal" placeholder="Paste Code hier"></textarea><br>
+
+<div id="top"></div>
+<div id="hand"></div>
+
+<script>
+let pc = new RTCPeerConnection();
+let dataChannel;
+
+function create(){
+  dataChannel = pc.createDataChannel("game");
+
+  pc.onicecandidate = e=>{
+    if(!e.candidate){
+      signal.value = JSON.stringify(pc.localDescription);
+    }
+  };
+
+  pc.createOffer().then(o=>pc.setLocalDescription(o));
 }
 
-button {
-  font-size: 20px;
-  padding: 15px;
-  margin: 5px;
-  border-radius: 10px;
-  border: none;
+function join(){
+  let offer = JSON.parse(signal.value);
+
+  pc.ondatachannel = e=>{
+    dataChannel = e.channel;
+    setup();
+  };
+
+  pc.onicecandidate = e=>{
+    if(!e.candidate){
+      signal.value = JSON.stringify(pc.localDescription);
+    }
+  };
+
+  pc.setRemoteDescription(offer)
+    .then(()=>pc.createAnswer())
+    .then(a=>pc.setLocalDescription(a));
 }
 
-.card {
-  display: inline-block;
-  width: 80px;
-  height: 120px;
-  margin: 5px;
-  border-radius: 12px;
-  font-size: 22px;
-  font-weight: bold;
+function setup(){
+  dataChannel.onmessage = e=>{
+    let d = JSON.parse(e.data);
+    render(d);
+  };
 }
 
-.red { background: red; }
-.green { background: green; }
-.blue { background: blue; }
-.yellow { background: gold; color: black; }
+function send(data){
+  dataChannel.send(JSON.stringify(data));
+}
 
+let hand=[], top={color:"red",value:0};
+
+function render(d){
+  hand=d.hand; top=d.top;
+
+  document.getElementById("top").innerHTML =
+    `<div class="card ${top.color}">${top.value}</div>`;
+
+  let h="";
+  hand.forEach(c=>{
+    h+=`<div class="card ${c.color}" onclick='play(${JSON.stringify(c)})'>${c.value}</div>`;
+  });
+  handDiv.innerHTML=h;
+}
+
+function play(card){
+  send({play:card});
+}
+</script>
+
+</body>
+</html>
 #hand {
   position: fixed;
   bottom: 0;
