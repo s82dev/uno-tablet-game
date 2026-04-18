@@ -2,22 +2,18 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNO LOBBY</title>
+<title>UNO ONLINE</title>
 
 <style>
 body{
   margin:0;
   font-family:sans-serif;
-  background:linear-gradient(135deg,#4e54c8,#8f94fb);
+  background:linear-gradient(135deg,#ff512f,#dd2476);
   color:white;
   text-align:center;
 }
 
 h1{font-size:40px;margin-top:40px;}
-
-.container{
-  margin-top:50px;
-}
 
 button{
   font-size:22px;
@@ -38,19 +34,17 @@ input{
   width:200px;
 }
 
-#codeBox{
-  font-size:50px;
-  letter-spacing:10px;
+#code{
+  font-size:60px;
   margin-top:20px;
 }
+
 </style>
 </head>
 
 <body>
 
 <h1>UNO 🔥</h1>
-
-<div class="container">
 
 <button onclick="create()">CREATE GAME</button>
 
@@ -60,34 +54,36 @@ input{
 <br>
 <button onclick="join()">JOIN GAME</button>
 
-<div id="codeBox"></div>
-
-</div>
+<div id="code"></div>
 
 <script>
-let pc = new RTCPeerConnection();
-let dc;
+const ws = new WebSocket("wss://DEIN-LINK.up.railway.app");
 
-function makeCode(){
-  return Math.random().toString(36).substring(2,6).toUpperCase();
-}
+ws.onmessage = (msg)=>{
+  let data = JSON.parse(msg.data);
+
+  if(data.type==="created"){
+    code.innerText = data.code;
+  }
+
+  if(data.type==="start"){
+    document.body.innerHTML = "<h1>GAME START 🎉</h1>";
+  }
+
+  if(data.type==="error"){
+    alert("Game not found!");
+  }
+};
 
 function create(){
-  let code = makeCode();
-  codeBox.innerText = code;
-
-  dc = pc.createDataChannel("game");
-
-  pc.onicecandidate = e=>{
-    if(!e.candidate){
-      localStorage.setItem("UNO_"+code, JSON.stringify(pc.localDescription));
-    }
-  };
-
-  pc.createOffer().then(o=>pc.setLocalDescription(o));
+  ws.send(JSON.stringify({type:"create"}));
 }
 
 function join(){
-  let code = document.getElementById("joinCode").value.toUpperCase();
+  let c = document.getElementById("joinCode").value.toUpperCase();
+  ws.send(JSON.stringify({type:"join", code:c}));
+}
+</script>
 
-  let
+</body>
+</html>
