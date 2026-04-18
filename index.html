@@ -2,36 +2,29 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNO P2P</title>
-
-<style>
-body{font-family:sans-serif;text-align:center;background:#111;color:white;}
-.card{display:inline-block;width:80px;height:120px;margin:5px;border-radius:10px;font-size:20px;}
-.red{background:red;} .green{background:green;}
-.blue{background:blue;} .yellow{background:gold;color:black;}
-#hand{position:fixed;bottom:0;width:100%;overflow-x:auto;white-space:nowrap;}
-button{font-size:18px;padding:10px;margin:5px;}
-</style>
+<title>UNO FIX</title>
 </head>
 
-<body>
+<body style="background:#111;color:white;text-align:center;font-family:sans-serif;">
 
-<h1>UNO FREE 🔥</h1>
+<h1>UNO 🔥</h1>
 
 <button onclick="create()">HOST</button>
 <button onclick="join()">JOIN</button>
 
-<textarea id="signal" placeholder="Paste Code hier"></textarea><br>
-
-<div id="top"></div>
-<div id="hand"></div>
+<br><br>
+<textarea id="signal" style="width:90%;height:120px;"></textarea>
 
 <script>
 let pc = new RTCPeerConnection();
-let dataChannel;
+let dc;
+
+function log(x){ console.log(x); }
 
 function create(){
-  dataChannel = pc.createDataChannel("game");
+  alert("HOST gestartet");
+
+  dc = pc.createDataChannel("game");
 
   pc.onicecandidate = e=>{
     if(!e.candidate){
@@ -43,11 +36,13 @@ function create(){
 }
 
 function join(){
+  alert("JOIN gestartet");
+
   let offer = JSON.parse(signal.value);
 
   pc.ondatachannel = e=>{
-    dataChannel = e.channel;
-    setup();
+    dc = e.channel;
+    alert("Verbunden!");
   };
 
   pc.onicecandidate = e=>{
@@ -60,126 +55,7 @@ function join(){
     .then(()=>pc.createAnswer())
     .then(a=>pc.setLocalDescription(a));
 }
-
-function setup(){
-  dataChannel.onmessage = e=>{
-    let d = JSON.parse(e.data);
-    render(d);
-  };
-}
-
-function send(data){
-  dataChannel.send(JSON.stringify(data));
-}
-
-let hand=[], top={color:"red",value:0};
-
-function render(d){
-  hand=d.hand; top=d.top;
-
-  document.getElementById("top").innerHTML =
-    `<div class="card ${top.color}">${top.value}</div>`;
-
-  let h="";
-  hand.forEach(c=>{
-    h+=`<div class="card ${c.color}" onclick='play(${JSON.stringify(c)})'>${c.value}</div>`;
-  });
-  handDiv.innerHTML=h;
-}
-
-function play(card){
-  send({play:card});
-}
 </script>
 
 </body>
 </html>
-#hand {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: #111;
-  padding: 10px;
-  overflow-x: scroll;
-  white-space: nowrap;
-}
-
-</style>
-</head>
-<body>
-
-<h1>UNO Tablet 🔥</h1>
-
-<button onclick="create()">CREATE</button>
-<input id="code" placeholder="CODE">
-<button onclick="join()">JOIN</button>
-
-<h2 id="info"></h2>
-<div id="top"></div>
-
-<div id="hand"></div>
-
-<script>
-let ws = new WebSocket("ws://localhost:3000");
-let myTurn = false;
-
-function create() {
-  ws.send(JSON.stringify({ type: "create" }));
-}
-
-function join() {
-  ws.send(JSON.stringify({
-    type: "join",
-    code: document.getElementById("code").value
-  }));
-}
-
-ws.onmessage = msg => {
-  const d = JSON.parse(msg.data);
-
-  if (d.type === "created") {
-    document.getElementById("info").innerText = "CODE: " + d.code;
-  }
-
-  if (d.type === "joined") {
-    document.getElementById("info").innerText = "JOINED: " + d.code;
-  }
-
-  if (d.type === "update") {
-    myTurn = d.turn === d.you;
-
-    document.getElementById("top").innerHTML =
-      `<div class="card ${d.pile.color}">
-        ${d.pile.value}
-      </div>`;
-
-    let handHTML = "";
-    d.hand.forEach(c => {
-      handHTML += `
-      <div class="card ${c.color}"
-        onclick='play(${JSON.stringify(c)})'>
-        ${c.value}
-      </div>`;
-    });
-
-    document.getElementById("hand").innerHTML = handHTML;
-
-    if (myTurn) {
-      document.getElementById("info").innerText += " | YOUR TURN";
-    }
-  }
-};
-
-function play(card) {
-  if (!myTurn) return;
-
-  ws.send(JSON.stringify({
-    type: "play",
-    card
-  }));
-}
-</script>
-
-</body>
-</html>
-  
