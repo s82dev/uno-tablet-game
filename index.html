@@ -2,12 +2,47 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UNO EASY LINK</title>
+<title>UNO LOBBY</title>
 
 <style>
-body{font-family:sans-serif;text-align:center;background:#111;color:white;}
-textarea{width:90%;height:100px;}
-button{font-size:18px;padding:10px;margin:5px;}
+body{
+  margin:0;
+  font-family:sans-serif;
+  background:linear-gradient(135deg,#4e54c8,#8f94fb);
+  color:white;
+  text-align:center;
+}
+
+h1{font-size:40px;margin-top:40px;}
+
+.container{
+  margin-top:50px;
+}
+
+button{
+  font-size:22px;
+  padding:15px 30px;
+  border:none;
+  border-radius:12px;
+  margin:10px;
+  background:white;
+  color:#333;
+}
+
+input{
+  font-size:22px;
+  padding:15px;
+  border-radius:10px;
+  border:none;
+  text-align:center;
+  width:200px;
+}
+
+#codeBox{
+  font-size:50px;
+  letter-spacing:10px;
+  margin-top:20px;
+}
 </style>
 </head>
 
@@ -15,28 +50,37 @@ button{font-size:18px;padding:10px;margin:5px;}
 
 <h1>UNO 🔥</h1>
 
-<button onclick="create()">HOST</button>
-<button onclick="join()">JOIN</button>
+<div class="container">
+
+<button onclick="create()">CREATE GAME</button>
 
 <br><br>
-<textarea id="signal"></textarea>
 
-<h3 id="link"></h3>
+<input id="joinCode" placeholder="ENTER CODE">
+<br>
+<button onclick="join()">JOIN GAME</button>
+
+<div id="codeBox"></div>
+
+</div>
 
 <script>
 let pc = new RTCPeerConnection();
 let dc;
 
+function makeCode(){
+  return Math.random().toString(36).substring(2,6).toUpperCase();
+}
+
 function create(){
+  let code = makeCode();
+  codeBox.innerText = code;
+
   dc = pc.createDataChannel("game");
 
   pc.onicecandidate = e=>{
     if(!e.candidate){
-      let code = btoa(JSON.stringify(pc.localDescription));
-      signal.value = code;
-
-      let url = location.origin + location.pathname + "?join=" + code;
-      link.innerHTML = "👉 Share this link:<br>" + url;
+      localStorage.setItem("UNO_"+code, JSON.stringify(pc.localDescription));
     }
   };
 
@@ -44,38 +88,6 @@ function create(){
 }
 
 function join(){
-  let code = signal.value || new URLSearchParams(location.search).get("join");
-  if(!code) return alert("No code!");
+  let code = document.getElementById("joinCode").value.toUpperCase();
 
-  let offer = JSON.parse(atob(code));
-
-  pc.ondatachannel = e=>{
-    dc = e.channel;
-    alert("Connected!");
-  };
-
-  pc.onicecandidate = e=>{
-    if(!e.candidate){
-      let answer = btoa(JSON.stringify(pc.localDescription));
-      signal.value = answer;
-      alert("Send this back to host!");
-    }
-  };
-
-  pc.setRemoteDescription(offer)
-    .then(()=>pc.createAnswer())
-    .then(a=>pc.setLocalDescription(a));
-}
-
-// AUTO JOIN wenn Link benutzt wird
-window.onload = ()=>{
-  let code = new URLSearchParams(location.search).get("join");
-  if(code){
-    signal.value = code;
-    join();
-  }
-};
-</script>
-
-</body>
-</html>
+  let
