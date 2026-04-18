@@ -1,40 +1,57 @@
+const express = require("express");
+const http = require("http");
 const WebSocket = require("ws");
-const server = new WebSocket.Server({ port: 3000 });
 
-let lobbies = {};
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
-function makeCode() {
-  return Math.random().toString(36).substring(2, 7).toUpperCase();
+let rooms = {};
+
+function makeCode(){
+  return Math.random().toString(36).substring(2,6).toUpperCase();
 }
 
-function makeDeck() {
-  const colors = ["red", "green", "blue", "yellow"];
-  let deck = [];
+wss.on("connection", (ws) => {
 
-  colors.forEach(c => {
-    for (let i = 0; i <= 9; i++) {
-      deck.push({ color: c, value: i });
-      deck.push({ color: c, value: i });
+  ws.on("message", (msg) => {
+    let data = JSON.parse(msg);
+
+    if(data.type === "create"){
+      let code = makeCode();
+      rooms[code] = [ws];
+      ws.code = code;
+
+      ws.send(JSON.stringify({type:"created", code}));
     }
-    deck.push({ color: c, value: "+2" });
-    deck.push({ color: c, value: "skip" });
+
+    if(data.type === "join"){
+      let room = rooms[data.code];
+      if(!room){
+        ws.send(JSON.stringify({type:"error"}));
+        return;
+      }
+
+      room.push(ws);
+      ws.code = data.code;
+
+      room.forEach(c => {
+        c.send(JSON.stringify({type:"start"}));
+      });
+    }
   });
 
-  return deck.sort(() => Math.random() - 0.5);
-}
+  ws.on("close", () => {
+    if(ws.code && rooms[ws.code]){
+      rooms[ws.code] = rooms[ws.code].filter(c => c !== ws);
+    }
+  });
 
-function addBots(lobby) {
-  while (lobby.players.length < 2) {
-    lobby.players.push({
-      bot: true,
-      hand: []
-    });
-  }
-}
+});
 
-server.on("connection", ws => {
-  ws.on("message", msg => {
-    const data = JSON.parse(msg);
+app.use(express.static("./"));
+
+server.listen(3000, () => console.log("Server läuft"));    const data = JSON.parse(msg);
 
     if (data.type === "create") {
       const code = makeCode();
